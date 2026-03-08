@@ -10,9 +10,14 @@
   <title>Tarjmul</title>
   <link rel="manifest" href="manifest.json"/>
   <link rel="apple-touch-icon" href="icon-192.png"/>
+  <!-- Preload React before anything else -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" as="script" crossorigin/>
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" as="script" crossorigin/>
+  <!-- Fonts: preconnect + swap so text renders instantly with fallback -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Caveat+Brush&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Caveat+Brush&display=swap" rel="stylesheet" media="print" onload="this.media='all'"/>
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Caveat+Brush&display=swap" rel="stylesheet"/></noscript>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -23,7 +28,7 @@
     }
     html, body { height: 100%; overflow: hidden; }
     body {
-      font-family: 'Caveat', cursive;
+      font-family: 'Caveat', 'Comic Sans MS', cursive;
       background: var(--paper);
       background-image: repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(180,170,150,0.15) 27px, rgba(180,170,150,0.15) 28px);
       color: var(--ink);
@@ -391,8 +396,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(h(App));
 
 // ── Register Service Worker ────────────────────────────────────────────────────
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  window.addEventListener("load", async () => {
+    const regs = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(regs.map(r => r.unregister()));
+    navigator.serviceWorker.register("/sw.js")
+      .then(reg => console.log("SW ok:", reg.scope))
+      .catch(err => console.error("SW fail:", err));
   });
 }
 </script>
