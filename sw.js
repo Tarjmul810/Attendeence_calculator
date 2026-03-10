@@ -1,4 +1,4 @@
-const CACHE = "tarjmul-v3";
+const CACHE = "tarjmul-v4";
 
 // Only precache what we KNOW exists locally — never CDN URLs
 const PRECACHE = [
