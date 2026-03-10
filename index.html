@@ -4,11 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <meta name="theme-color" content="#1a1a2e"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Tarjmul"/>
   <title>Tarjmul</title>
   <link rel="manifest" href="manifest.json"/>
+  <link rel="icon" href="icon-192.png"/>
   <link rel="apple-touch-icon" href="icon-192.png"/>
   <!-- Preload React before anything else -->
   <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" as="script" crossorigin/>
@@ -133,10 +135,10 @@ function getDatesBetween(start, end) {
 function getDayName(dateStr) { const d = new Date(dateStr).getDay(); return DAYS[d===0?6:d-1]; }
 function todayStr() { return new Date().toISOString().split("T")[0]; }
 
-function calcStats(subject, records, startDate, endDate) {
-  if (!startDate || !endDate) return {total:0,attended:0,pct:0,canSkip:0,needMore:0};
+function calcStats(subject, records, startDate) {
+  if (!startDate) return {total:0,attended:0,pct:0,canSkip:0,needMore:0};
   let total=0, attended=0;
-  getDatesBetween(startDate, endDate).forEach(date => {
+  getDatesBetween(startDate, todayStr()).forEach(date => {
     const slot = subject.schedule.find(s => s.day === getDayName(date));
     if (!slot) return;
     const rec = records.find(r => r.subjectId === subject.id && r.date === date);
@@ -233,8 +235,7 @@ function App() {
   const [subjects, setSubjects] = useState(() => load("sc_subjects", defaultSubjects));
   const [records,  setRecords]  = useState(() => load("sc_records",  []));
   const [settings, setSettings] = useState(() => load("sc_settings", {
-    startDate: todayStr(),
-    endDate:   new Date(Date.now()+120*86400000).toISOString().split("T")[0]
+    startDate: todayStr()
   }));
   const [view, setView]             = useState("today");
   const [selectedDate, setDate]     = useState(todayStr());
@@ -254,7 +255,7 @@ function App() {
     records.find(r=>r.subjectId===subjectId&&r.date===date)?.status??null
   ,[records]);
 
-  const allStats    = subjects.map(s=>({subject:s, stats:calcStats(s,records,settings.startDate,settings.endDate)}));
+  const allStats    = subjects.map(s=>({subject:s, stats:calcStats(s,records,settings.startDate)}));
   const todaySlots  = getTodaySubjects(subjects, selectedDate);
   const dangerCount = allStats.filter(({stats})=>stats.pct<75).length;
   const safeCount   = allStats.filter(({stats})=>stats.pct>=75).length;
@@ -360,20 +361,17 @@ function App() {
           h("input",{type:"date",className:"settings-input",value:settings.startDate,onChange:e=>setSettings(s=>({...s,startDate:e.target.value}))})
         ),
         h("div",{className:"settings-row"},
-          h("span",{className:"settings-lbl"},"Semester End"),
-          h("input",{type:"date",className:"settings-input",value:settings.endDate,onChange:e=>setSettings(s=>({...s,endDate:e.target.value}))})
-        ),
-        h("div",{className:"settings-row"},
           h("span",{className:"settings-lbl"},"Shortage at"),
           h("span",{className:"threshold-badge"},"75%")
         ),
         h("div",{className:"info-box"},
-          "Duration: ", h("strong",null,
-            settings.startDate&&settings.endDate
-              ? `${Math.max(0,Math.ceil((new Date(settings.endDate)-new Date(settings.startDate))/86400000))} days`
+          "Days since start: ", h("strong",null,
+            settings.startDate
+              ? `${Math.max(0,Math.ceil((new Date(todayStr())-new Date(settings.startDate))/86400000))} days`
               : "—"
           ), h("br"),
-          "75% threshold fixed per university rules"
+          "Tracking from start date up to ", h("strong",null,"today"), " only.", h("br"),
+          "75% threshold fixed per university rules."
         ),
         h("button",{className:"danger-btn",onClick:()=>{ if(window.confirm("Clear ALL attendance records?")) setRecords([]); }},"Clear All Attendance Records")
       )
